@@ -1,0 +1,322 @@
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  UsersDynamoTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      TableName: 5409-TA-userData
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  TaskDynamoTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      TableName: 5409-TA-taskData
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  MyHttpAPI:
+    Type: "AWS::ApiGatewayV2::Api"
+    Properties:
+      Name: "5409-taskManager"
+      ProtocolType: "HTTP"
+      CorsConfiguration:
+        AllowMethods:
+          - "GET"
+          - "POST"
+          - "PUT"
+          - "DELETE"
+        AllowOrigins:
+          - "*"
+        AllowHeaders:
+          - "*"
+
+  APIGatewayStage:
+    Type: "AWS::ApiGatewayV2::Stage"
+    Properties:
+      ApiId: !Ref MyHttpAPI
+      StageName: "$default"
+      AutoDeploy: true
+
+  5409TAregisteruser:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      FunctionName: "5409TAregisteruser"
+      Runtime: "nodejs14.x"
+      Handler: "5409-TA-registeruser.handler"
+      Role: "arn:aws:iam::575851330439:role/LabRole"
+      Code:
+        S3Bucket: "5409-cloudformationbuckets"
+        S3Key: "5409-TA-registeruser.zip"
+
+  5409TAregisteruserLambdaExecutionPermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName: !Ref 5409TAregisteruser
+      Action: "lambda:InvokeFunction"
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MyHttpAPI}/*/*"
+
+  5409TAregisteruserFunctionIntegration:
+    Type: "AWS::ApiGatewayV2::Integration"
+    DependsOn:
+      - 5409TAregisteruser
+    Properties:
+      ApiId: !Ref MyHttpAPI
+      IntegrationType: "AWS_PROXY"
+      IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${5409TAregisteruser.Arn}/invocations"
+      PayloadFormatVersion: "2.0"
+
+  5409TAregisteruserLambdaRoute:
+    Type: "AWS::ApiGatewayV2::Route"
+    DependsOn:
+      - 5409TAregisteruserFunctionIntegration
+    Properties:
+      ApiId: !Ref MyHttpAPI
+      RouteKey: "POST /userRegistration"
+      Target: !Sub "integrations/${5409TAregisteruserFunctionIntegration}"
+
+  5409TAloginuser:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      FunctionName: "5409TAloginuser"
+      Runtime: "nodejs14.x"
+      Handler: "5409-TA-loginuser.handler"
+      Role: "arn:aws:iam::575851330439:role/LabRole"
+      Code:
+        S3Bucket: "5409-cloudformationbuckets"
+        S3Key: "5409-TA-loginuser.zip"
+
+  5409TAloginuserLambdaExecutionPermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName: !Ref 5409TAloginuser
+      Action: "lambda:InvokeFunction"
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MyHttpAPI}/*/*"
+
+  5409TAloginuserFunctionIntegration:
+    Type: "AWS::ApiGatewayV2::Integration"
+    DependsOn:
+      - 5409TAloginuser
+    Properties:
+      ApiId: !Ref MyHttpAPI
+      IntegrationType: "AWS_PROXY"
+      IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${5409TAloginuser.Arn}/invocations"
+      PayloadFormatVersion: "2.0"
+
+  5409TAloginuserLambdaRoute:
+    Type: "AWS::ApiGatewayV2::Route"
+    DependsOn:
+      - 5409TAloginuserFunctionIntegration
+    Properties:
+      ApiId: !Ref MyHttpAPI
+      RouteKey: "POST /userLogin"
+      Target: !Sub "integrations/${5409TAloginuserFunctionIntegration}"
+
+  5409TAaddtask:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      FunctionName: "5409TAaddtask"
+      Runtime: "nodejs14.x"
+      Handler: "5409-TA-addtask.handler"
+      Role: "arn:aws:iam::575851330439:role/LabRole"
+      Code:
+        S3Bucket: "5409-cloudformationbuckets"
+        S3Key: "5409-TA-addtask.zip"
+
+  5409TAaddtaskLambdaExecutionPermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName: !Ref 5409TAaddtask
+      Action: "lambda:InvokeFunction"
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MyHttpAPI}/*/*"
+
+  5409TAaddtaskFunctionIntegration:
+    Type: "AWS::ApiGatewayV2::Integration"
+    DependsOn:
+      - 5409TAaddtask
+    Properties:
+      ApiId: !Ref MyHttpAPI
+      IntegrationType: "AWS_PROXY"
+      IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${5409TAaddtask.Arn}/invocations"
+      PayloadFormatVersion: "2.0"
+
+  5409TAaddtaskLambdaRoute:
+    Type: "AWS::ApiGatewayV2::Route"
+    DependsOn:
+      - 5409TAaddtaskFunctionIntegration
+    Properties:
+      ApiId: !Ref MyHttpAPI
+      RouteKey: "POST /addTask"
+      Target: !Sub "integrations/${5409TAaddtaskFunctionIntegration}"
+
+  5409TAgettask:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      FunctionName: "5409TAgettask"
+      Runtime: "nodejs14.x"
+      Handler: "5409-TA-gettask.handler"
+      Role: "arn:aws:iam::575851330439:role/LabRole"
+      Code:
+        S3Bucket: "5409-cloudformationbuckets"
+        S3Key: "5409-TA-gettask.zip"
+
+  5409TAgettaskLambdaExecutionPermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName: !Ref 5409TAgettask
+      Action: "lambda:InvokeFunction"
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MyHttpAPI}/*/*"
+
+  5409TAgettaskFunctionIntegration:
+    Type: "AWS::ApiGatewayV2::Integration"
+    DependsOn:
+      - 5409TAgettask
+    Properties:
+      ApiId: !Ref MyHttpAPI
+      IntegrationType: "AWS_PROXY"
+      IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${5409TAgettask.Arn}/invocations"
+      PayloadFormatVersion: "2.0"
+
+  5409TAgettaskLambdaRoute:
+    Type: "AWS::ApiGatewayV2::Route"
+    DependsOn:
+      - 5409TAgettaskFunctionIntegration
+    Properties:
+      ApiId: !Ref MyHttpAPI
+      RouteKey: "POST /getTask"
+      Target: !Sub "integrations/${5409TAgettaskFunctionIntegration}"
+
+  5409TAdeleteTask:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      FunctionName: "5409TAdeleteTask"
+      Runtime: "nodejs14.x"
+      Handler: "5409-TA-deleteTask.handler"
+      Role: "arn:aws:iam::575851330439:role/LabRole"
+      Code:
+        S3Bucket: "5409-cloudformationbuckets"
+        S3Key: "5409-TA-deleteTask.zip"
+
+  5409TAdeleteTaskLambdaExecutionPermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName: !Ref 5409TAdeleteTask
+      Action: "lambda:InvokeFunction"
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MyHttpAPI}/*/*"
+
+  5409TAdeleteTaskFunctionIntegration:
+    Type: "AWS::ApiGatewayV2::Integration"
+    DependsOn:
+      - 5409TAdeleteTask
+    Properties:
+      ApiId: !Ref MyHttpAPI
+      IntegrationType: "AWS_PROXY"
+      IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${5409TAdeleteTask.Arn}/invocations"
+      PayloadFormatVersion: "2.0"
+
+  5409TAdeleteTaskLambdaRoute:
+    Type: "AWS::ApiGatewayV2::Route"
+    DependsOn:
+      - 5409TAdeleteTaskFunctionIntegration
+    Properties:
+      ApiId: !Ref MyHttpAPI
+      RouteKey: "POST /deleteTask"
+      Target: !Sub "integrations/${5409TAdeleteTaskFunctionIntegration}"
+
+  5409TAuserBase:
+    Type: "AWS::SNS::Topic"
+    Properties:
+      DisplayName: "5409TAuserBase"
+      TopicName: "5409TAuserBase"
+
+  5409TAuserBaseSNSTopicPermission:
+    Type: "AWS::SNS::TopicPolicy"
+    DependsOn: 5409TAuserBase
+    Properties:
+      Topics:
+        - Ref: "5409TAuserBase"
+      PolicyDocument:
+        Id: "MySNSTopicPolicy"
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "events.amazonaws.com"
+            Action: "sns:Publish"
+            Resource: !Ref 5409TAuserBase
+
+  5409TAuserBaseEventBridgeRule:
+    Type: "AWS::Events::Rule"
+    DependsOn: 5409TAuserBaseSNSTopicPermission
+    Properties:
+      Name: "5409TAuserBaseEventBridgeRule"
+      Description: "My EventBridge Rule with Cron Expression"
+      ScheduleExpression: "cron(59 3 * * ? *)"
+      State: "ENABLED"
+      Targets:
+        - Arn: !Ref 5409TAuserBase
+          Id: "MySNSTopicTarget"
+          Input: '{"Message": "Stay motivated! Remember to work on your task today."}'
+
+  FrontendApplication:
+    Type: "AWS::ElasticBeanstalk::Application"
+    Properties:
+      ApplicationName: "MyHttpAPI"
+      Description: "Application"
+
+  ApplicationVersion:
+    Type: "AWS::ElasticBeanstalk::ApplicationVersion"
+    Properties:
+      ApplicationName: !Ref FrontendApplication
+      Description: "Application Version"
+      SourceBundle:
+        S3Bucket: "5409-frontends"
+        S3Key: "task-managers.zip"
+  FrontendEnvironment:
+    Type: "AWS::ElasticBeanstalk::Environment"
+    Properties:
+      ApplicationName: !Ref FrontendApplication
+      Description: "Environment"
+      EnvironmentName: "MyHttpAPI"
+      SolutionStackName: "64bit Amazon Linux 2023 v6.0.3 running Node.js 18"
+      VersionLabel: !Ref ApplicationVersion
+      OperationsRole: "arn:aws:iam::575851330439:role/LabRole"
+      Tier:
+        Name: "WebServer"
+        Type: "Standard"
+      OptionSettings:
+        - Namespace: "aws:elasticbeanstalk:environment"
+          OptionName: EnvironmentType
+          Value: "SingleInstance"
+        - Namespace: "aws:elasticbeanstalk:environment"
+          OptionName: ServiceRole
+          Value: arn:aws:iam::575851330439:role/LabRole
+        - Namespace: "aws:autoscaling:launchconfiguration"
+          OptionName: "IamInstanceProfile"
+          Value: "LabInstanceProfile"
+        - Namespace: "aws:elasticbeanstalk:application:environment"
+          OptionName: "REACT_APP_API_URL"
+          Value: !Sub "https://${MyHttpAPI}.execute-api.${AWS::Region}.amazonaws.com"
+
+Outputs:
+  ApplicationURL:
+    Description: "Application URL"
+    Value: !Join ["", ["http://", !GetAtt FrontendEnvironment.EndpointURL]]
